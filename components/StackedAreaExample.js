@@ -1,166 +1,134 @@
 import React from 'react';
-import {StackedAreaChart} from 'react-native-svg-charts';
+import {StackedAreaChart, Grid, YAxis, XAxis} from 'react-native-svg-charts';
 import * as shape from 'd3-shape';
 import {View, Text, Button, Alert} from 'react-native';
 import axios from 'axios';
+import {G, Circle, Rect, Line} from 'react-native-svg';
+import * as dateFns from 'date-fns';
+import * as scale from 'd3-scale';
 
+import stonks from '/Users/juliuskapeniakdev/projects/MoodyStocks/components/stockData.js';
 export default class StackedAreaExample extends React.PureComponent {
-  
-  constructor(){
-      super();
-      this.state = {
-          stockData: [
-            {
-              month: new Date(2015, 0, 1),
-              apples: 3840,
-              bananas: 1920,
-              cherries: 960,
-              dates: 400,
-            },
-            {
-              month: new Date(2015, 1, 1),
-              apples: 1600,
-              bananas: 1440,
-              cherries: 960,
-              dates: 400,
-            },
-            {
-              month: new Date(2015, 2, 1),
-              apples: 640,
-              bananas: 960,
-              cherries: 3640,
-              dates: 400,
-            },
-            
-          ],
-      }
+  constructor() {
+    super();
+    this.state = {
+      stockData: [],
+      isLoading: true,
+    };
+
+    // this.stonks();
+    //console.log(Object.size(this.state))
   }
 
-  addItem = () => {
-    let newStock = {
-      month: new Date(2015, 3, 1),
-      apples: 3320,
-      bananas: 480,
-      cherries: 640,
-      dates: 400,
-    }
-
-    this.setState({stockData: [...this.state.stockData, newStock]})
-
+  componentDidMount() {
+    this.stonks();
   }
-    
-  
-  
-  
-    stonks = async () => {
-   
-    var ret = null;
+
+  stonks = async () => {
+    // var ret = null;
     try {
-      const sectorRes = await axios.get(
-        `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`,
-      );
-      
-      var tSeries = sectorRes.data['Time Series (Daily)'];
+      // const sectorRes = await axios.get(
+      // `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`,
+      //);
 
-      //console.log(Object.size(tSeries));
-      //var tempDataStore = [];
-      let arr = new Array(100);
-      let i = 0;
-      for (var tempData in tSeries) {
-        // console.log('i: ' + i);
-        // console.log('Your Date: ' + tempData);
+      axios
+        .get(
+          `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`,
+        )
+        .then((sectorRes) => {
+          var tSeries = sectorRes.data['Time Series (Daily)'];
 
-        const dateFields = tempData.split('-');
+          //console.log(Object.size(tSeries));
+          //var tempDataStore = [];
+          let arr = new Array(100);
+          let i = 0;
+          for (var tempData in tSeries) {
+            // console.log('i: ' + i);
+            //   console.log('Your Date: ' + tempData);
+            //   console.log('Price: ' + parseFloat(tSeries[tempData]['4. close']));
 
-        arr[i] = {
-          month: new Date(dateFields[0], dateFields[2], dateFields[1]),
-          apples: parseInt(tSeries[tempData]['4. close']),
-          bananas: 1920,
-          cherries: 960,
-          dates: 400,
-        };
+            const dateFields = tempData.split('-');
+            //this.setState({data: [...this.state.data, parseInt(tSeries[tempData]['4. close'])]})
+            //this.setState({x: [...this.state.x, new Date(dateFields[0], dateFields[2], dateFields[1])]})
+            // console.log(dateFields[0]);
+            // console.log(dateFields[1]);
+            //  console.log(dateFields[2]);
 
-      
-        i++;
-      }
-      
-      for (let i = 0; i < 4; i++) {
+            arr[i] = {
+              month: new Date(dateFields[0], dateFields[1], dateFields[2]),
+              price: parseInt(tSeries[tempData]['4. close']),
+            };
 
-        
-        this.state.stockData[i] = arr[i];
-      }
+            i++;
+          }
 
-      
+          for (let i = 0; i < 50; i++) {
+            this.setState({stockData: [...this.state.stockData, arr[i]]});
+          }
 
-      
+          this.setState({isLoading: false});
+        });
     } catch (error) {
       console.log(error);
     }
-
-    
   };
 
   render() {
+    // const {isLoading} =this.state;
+    const axesSvg = {fontSize: 10, fill: 'grey'};
+    const verticalContentInset = {top: 10, bottom: 10};
+    const xAxisHeight = 30;
 
-    
-    /*const data = [
-      {
-        month: new Date(2015, 0, 1),
-        apples: 3840,
-        bananas: 1920,
-        cherries: 960,
-        dates: 400,
-      },
-      {
-        month: new Date(2015, 1, 1),
-        apples: 1600,
-        bananas: 1440,
-        cherries: 960,
-        dates: 400,
-      },
-      {
-        month: new Date(2015, 2, 1),
-        apples: 640,
-        bananas: 960,
-        cherries: 3640,
-        dates: 400,
-      },
-      {
-        month: new Date(2015, 3, 1),
-        apples: 3320,
-        bananas: 480,
-        cherries: 640,
-        dates: 400,
-      },
-    ];
-        */
-     
+    const colors = ['#cc66ff']; //, '#aa00ff', '#cc66ff', '#eeccff'
+    const keys = ['price']; // const keys = ['apples', 'bananas', 'cherries', 'dates'];
 
-    const colors = ['#8800cc', '#aa00ff', '#cc66ff', '#eeccff'];
-    const keys = ['apples', 'bananas', 'cherries', 'dates'];
     const svgs = [
-      {onPress: () => console.log('apples')},
-      {onPress: () => console.log('bananas')},
-      {onPress: () => console.log('cherries')},
-      {onPress: () => console.log('dates')},
+      {onPress: () => console.log('price')},
+      // {onPress: () => console.log('bananas')},
+      // {onPress: () => console.log('cherries')},
+      //{onPress: () => console.log('dates')},
     ];
+
+    if (this.state.isLoading) {
+      return (
+        <View style={{marginBottom: 200, marginLeft: 160}}>
+          <Text>Loading</Text>
+        </View>
+      );
+    }
 
     return (
-      <View>
-        <Button
-          title="Press"
-          onPress={this.addItem} //onPress={() => this.state.data[5] = this.state.data[5]+100 }
-        />
-
-        <StackedAreaChart
-          style={{height: 500}}
+      <View style={{height: 250, padding: 20, flexDirection: 'row'}}>
+        <YAxis
           data={this.state.stockData}
-          keys={keys}
-          colors={colors}
-          curve={shape.curveNatural}
-          showGrid={false}
-          svgs={svgs}
+          style={{marginBottom: xAxisHeight}}
+          yAccessor={({item}) => item.price}
+          contentInset={verticalContentInset}
+          svg={axesSvg}
         />
+        <View style={{flex: 1, marginLeft: 10}}>
+          <StackedAreaChart
+            style={{flex: 1}}
+            style={{height: 300, flex: 1}}
+            data={this.state.stockData}
+            keys={keys}
+            colors={colors}
+            curve={shape.curveNatural}
+            showGrid={false}
+            svgs={svgs}
+          />
+
+          <XAxis
+            // style={{marginHorizontal: -10, height: xAxisHeight}}
+            data={this.state.stockData}
+            // scale={scale.scaleTime}
+            // numberOfTicks={20}
+            // xAccessor={({item}) => item.month}
+            // formatLabel={(value) => dateFns.format(value, 'M:d')}
+            // contentInset={{left: 10, right: 10}}
+            // svg={axesSvg}
+          />
+        </View>
       </View>
     );
   }
